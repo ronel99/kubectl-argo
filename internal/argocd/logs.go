@@ -72,15 +72,13 @@ func (c *Client) streamPodLogsGRPC(ctx context.Context, resolved *ResolvedApp, o
 	podName := opts.PodName
 	follow := opts.Follow
 	previous := opts.Previous
-	timestamps := opts.Timestamps
 
 	query := &application.ApplicationPodLogsQuery{
-		Name:       &appName,
-		Namespace:  &targetNS,
-		PodName:    &podName,
-		Follow:     &follow,
-		Previous:   &previous,
-		Timestamps: &timestamps,
+		Name:      &appName,
+		Namespace: &targetNS,
+		PodName:   &podName,
+		Follow:    &follow,
+		Previous:  &previous,
 	}
 	if resolved.AppNamespace != "" {
 		appNS := resolved.AppNamespace
