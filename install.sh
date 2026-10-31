@@ -92,7 +92,7 @@ main() {
   base_url="https://github.com/${REPO}/releases/download/${version}"
 
   tmp_dir="$(mktemp -d)"
-  trap 'rm -rf "${tmp_dir}"' EXIT
+  trap "rm -rf '${tmp_dir}'" EXIT
 
   info "Downloading ${BINARY_NAME} ${version} for ${os}/${arch}..."
   curl -fsSL "${base_url}/${archive}" -o "${tmp_dir}/${archive}"
