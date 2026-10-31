@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to create/publish (e.g. v0.1.0)"
+        required: true
+        default: "v0.1.0"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: false
+
+      - name: Tidy modules and run static checks
+        run: |
+          go mod tidy
+          go vet ./...
+
+      - name: Cross-compile release archives
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          set -euo pipefail
+
+          VERSION="${INPUT_TAG:-${GITHUB_REF_NAME}}"
+          COMMIT="$(git rev-parse --short HEAD)"
+          BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          LDFLAGS="-s -w -X kubectl-argo/cmd.Version=${VERSION} -X kubectl-argo/cmd.Commit=${COMMIT} -X kubectl-argo/cmd.BuildDate=${BUILD_DATE}"
+
+          mkdir -p dist
+
+          platforms=(
+            "linux/amd64"
+            "linux/arm64"
+            "darwin/amd64"
+            "darwin/arm64"
+            "windows/amd64"
+          )
+
+          for platform in "${platforms[@]}"; do
+            GOOS="${platform%/*}"
+            GOARCH="${platform#*/}"
+            STAGE_DIR="build/${GOOS}_${GOARCH}"
+            mkdir -p "${STAGE_DIR}"
+
+            BIN_NAME="kubectl-argo"
+            if [ "${GOOS}" = "windows" ]; then
+              BIN_NAME="kubectl-argo.exe"
+            fi
+
+            echo "==> Building ${BIN_NAME} for ${GOOS}/${GOARCH} (${VERSION})..."
+            CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" \
+              go build -trimpath -ldflags "${LDFLAGS}" -o "${STAGE_DIR}/${BIN_NAME}" .
+
+            cp README.md "${STAGE_DIR}/README.md"
+
+            ARCHIVE_BASE="kubectl-argo_${VERSION}_${GOOS}_${GOARCH}"
+            if [ "${GOOS}" = "windows" ]; then
+              (cd "${STAGE_DIR}" && zip -q "../../dist/${ARCHIVE_BASE}.zip" "${BIN_NAME}" README.md)
+            else
+              tar -C "${STAGE_DIR}" -czf "dist/${ARCHIVE_BASE}.tar.gz" "${BIN_NAME}" README.md
+            fi
+          done
+
+          (cd dist && sha256sum * > checksums.txt)
+          ls -lh dist/
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: kubectl-argo ${{ github.event.inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
