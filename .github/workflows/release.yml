@@ -27,7 +27,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
+          go-version: "1.23"
           cache: false
 
       - name: Tidy modules and run static checks
@@ -94,3 +94,5 @@ jobs:
             dist/*.tar.gz
             dist/*.zip
             dist/checksums.txt
+            install.sh
+            install.ps1

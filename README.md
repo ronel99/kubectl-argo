@@ -65,7 +65,19 @@ kubectl argo logs -f --tail=100 web-6d4f8b7c9-x2k9p -n payments-prod
 - **Go 1.22+** (when building from source)
 - **`kubectl`** (optional, to invoke the binary as `kubectl argo ...` instead of `kubectl-argo ...`)
 
-### Install from GitHub Releases
+### Quick Install Script (Recommended)
+
+**Linux & macOS (`install.sh`):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/ronel99/kubectl-argo/main/install.sh | bash
+```
+
+**Windows PowerShell (`install.ps1`):**
+```powershell
+irm https://raw.githubusercontent.com/ronel99/kubectl-argo/main/install.ps1 | iex
+```
+
+### Manual Download from GitHub Releases
 
 Download the pre-compiled binary for your OS and architecture (`linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, or `windows/amd64`) from the [Releases page](https://github.com/ronel99/kubectl-argo/releases):
 
